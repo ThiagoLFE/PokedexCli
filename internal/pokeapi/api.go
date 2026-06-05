@@ -34,10 +34,6 @@ type LocationsPaginated struct {
 }
 
 func (pk *PokeClient) GetLocations(url string) (LocationsPaginated, error) {
-	if url == "" {
-		url = pk.BaseUrl + "/location-area"
-	}
-
 	res, err := pk.Client.Get(url)
 
 	if err != nil {

@@ -1,10 +1,13 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/thiagolfe/pokedexcli/internal/pokeapi"
+	"github.com/thiagolfe/pokedexcli/internal/pokecache"
 )
 
 type CliCommand struct {
@@ -28,14 +31,34 @@ func (c *Config) commandHelp() error {
 }
 
 func (c *Config) commandMap() error {
-	nextPath := ""
+	// getting url
+	url := c.Client.BaseUrl + "/location-area"
 	if c.Next != nil {
-		nextPath = *c.Next
+		url = *c.Next
 	}
 
-	locations, err := c.Client.GetLocations(nextPath)
-	if err != nil {
-		return fmt.Errorf("%w", err)
+	// declaring values
+	var locations pokeapi.LocationsPaginated
+	var err error
+
+	// getting values
+	data, isCached := c.Cache.Get(url)
+	if isCached {
+		if err := json.Unmarshal(data, &locations); err != nil {
+			return err
+		}
+	} else {
+		locations, err = c.Client.GetLocations(url)
+		if err != nil {
+			return err
+		}
+
+		// adding new data to cache
+		dataToStore, err := json.Marshal(locations)
+		if err != nil {
+			return err
+		}
+		c.Cache.Add(url, dataToStore)
 	}
 
 	c.setPages(locations.Previous, locations.Next)
@@ -48,15 +71,35 @@ func (c *Config) commandMap() error {
 }
 
 func (c *Config) commandBackMap() error {
+	// getting url
+	url := c.Client.BaseUrl + "/location-area"
 
-	previousPath := ""
 	if c.Previous != nil {
-		previousPath = *c.Previous
+		url = *c.Previous
 	}
-	locations, err := c.Client.GetLocations(previousPath)
 
-	if err != nil {
-		return fmt.Errorf("%w", err)
+	// declaring values
+	var locations pokeapi.LocationsPaginated
+	var err error
+
+	// getting values
+	data, isCached := c.Cache.Get(url)
+	if isCached {
+		if err := json.Unmarshal(data, &locations); err != nil {
+			return err
+		}
+	} else {
+		locations, err = c.Client.GetLocations(url)
+		if err != nil {
+			return err
+		}
+
+		// adding new data to cache
+		dataToStore, err := json.Marshal(locations)
+		if err != nil {
+			return err
+		}
+		c.Cache.Add(url, dataToStore)
 	}
 
 	c.setPages(locations.Previous, locations.Next)
@@ -86,7 +129,7 @@ func getCommands(c *Config) {
 	}
 
 	cmd["bmap"] = CliCommand{
-		Description: "Shows the name of locations",
+		Description: "Returns to the last page of locations names",
 		Callback:    c.commandBackMap,
 	}
 
@@ -96,6 +139,7 @@ func getCommands(c *Config) {
 type Config struct {
 	Command  map[string]CliCommand
 	Client   *pokeapi.PokeClient
+	Cache    *pokecache.PokeCache
 	Next     *string
 	Previous *string
 }
@@ -108,6 +152,7 @@ func NewConfig() *Config {
 
 	getCommands(cfg)
 	cfg.Client = pokeapi.GetPokeClient()
+	cfg.Cache = pokecache.NewPokeCache(time.Minute * 5)
 
 	return cfg
 }
