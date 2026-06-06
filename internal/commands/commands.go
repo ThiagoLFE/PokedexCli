@@ -165,7 +165,6 @@ func (c *Config) commandCatch(pokemonName string) error {
 		}
 
 		data, err = json.Marshal(pokemon)
-
 		if err != nil {
 			return err
 		}
@@ -186,6 +185,44 @@ func (c *Config) commandCatch(pokemonName string) error {
 
 	return nil
 }
+
+func (c *Config) commandInspect(pokemonName string) error {
+	pokemon, hasInPokedex := c.Pokedex[pokemonName]
+
+	if !hasInPokedex {
+		fmt.Println("You have not caught that pokemon")
+		return nil
+	}
+
+	fmt.Printf("Name: %s\n", pokemon.Name)
+	fmt.Printf("Height: %d\n", pokemon.Height)
+	fmt.Printf("Weight: %d\n", pokemon.Weight)
+	fmt.Println("Stats: ")
+	for _, stt := range pokemon.Stats {
+		fmt.Printf("	-%s: %v\n", stt.Stat.Name, stt.BaseStat)
+	}
+	fmt.Println("Types: ")
+	for _, t := range pokemon.Types {
+		fmt.Printf("	-%s\n", t.Type.Name)
+	}
+	// fmt.Printf("-special-attack:" )
+	// fmt.Printf("-special-defense:",)
+	// for typs
+	// 	for
+	return nil
+}
+
+func (c *Config) commandShowPokedex(_ string) error {
+	fmt.Println("=================================")
+	fmt.Println("			Pokedex's user")
+	fmt.Println("=================================")
+	for name, _ := range c.Pokedex {
+		fmt.Printf("- %s\n", name)
+	}
+
+	return nil
+}
+
 func getCommands(c *Config) {
 	cmd := make(map[string]CliCommand, 0)
 
@@ -218,6 +255,10 @@ func getCommands(c *Config) {
 	cmd["inspect"] = CliCommand{
 		Description: "Use to inspect the pokemon from your pokedex to see their attributes",
 		Callback:    c.commandInspect,
+	}
+	cmd["pokedex"] = CliCommand{
+		Description: "Use to see all pokemons that you have cautch",
+		Callback:    c.commandShowPokedex,
 	}
 
 	c.Command = cmd

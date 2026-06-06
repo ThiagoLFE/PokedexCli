@@ -70,13 +70,16 @@ type LocationArea struct {
 }
 
 type Pokemon struct {
-	ID                     int    `json:"id"`
-	Name                   string `json:"name"`
-	BaseExperience         int    `json:"base_experience"`
-	IsDefault              bool   `json:"is_default"`
-	Order                  int    `json:"order"`
-	Weight                 int    `json:"weight"`
-	LocationAreaEncounters string `json:"location_area_encounters"`
+	ID                     int           `json:"id"`
+	Name                   string        `json:"name"`
+	BaseExperience         int           `json:"base_experience"`
+	IsDefault              bool          `json:"is_default"`
+	Order                  int           `json:"order"`
+	Weight                 int           `json:"weight"`
+	LocationAreaEncounters string        `json:"location_area_encounters"`
+	Stats                  []Stats       `json:"stats"`
+	Types                  []PokemonType `json:"types"`
+	Height                 int           `json:"height"`
 
 	// This items bellow have into the endpoint that we request, but they is useless for us
 	// Abilities              []any  `json:"abilities"`
@@ -90,8 +93,22 @@ type Pokemon struct {
 	// Sprites                any    `json:"sprites"`
 	// Cries                  any    `json:"cries"`
 	// Species                any    `json:"species"`
-	// Stats                  []any  `json:"stats"`
-	// Types                  any    `json:"types"`
+}
+type PokemonType struct {
+	Slot int `json:"slot"`
+	Type struct {
+		Name string `json:"name"`
+		URL  string `json:"url"`
+	} `json:"type"`
+}
+
+type Stats struct {
+	BaseStat int `json:"base_stat"`
+	Effort   int `json:"effort"`
+	Stat     struct {
+		Name string `json:"name"`
+		Url  string `json:"url"`
+	} `json:"stat"`
 }
 
 func (pk *PokeClient) GetLocations(url string) (LocationsPaginated, error) {
