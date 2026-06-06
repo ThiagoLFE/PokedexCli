@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thiagolfe/pokedexcli/internal"
 	"github.com/thiagolfe/pokedexcli/internal/pokecache"
+	"github.com/thiagolfe/pokedexcli/internal/repl"
 )
 
 func TestCleanInput(t *testing.T) {
@@ -29,7 +29,7 @@ func TestCleanInput(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		actual := internal.CleanInput(c.input)
+		actual := repl.CleanInput(c.input)
 
 		if len(actual) != len(c.expected) {
 			t.Errorf("Error to take the clean input: unexpected length")

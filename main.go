@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/thiagolfe/pokedexcli/internal/commands"
+	"github.com/thiagolfe/pokedexcli/internal/repl"
 )
 
 func main() {
@@ -24,15 +25,24 @@ func main() {
 		}
 
 		// Taking the user input
-		input := scan.Text()
+		input := repl.CleanInput(scan.Text())
+		commandName := ""
+		param := ""
 
-		cmd, ok := Config.Command[input]
+		if len(input) > 0 {
+			commandName = input[0]
+			if len(input) > 1 {
+				param = input[1]
+			}
+		}
+
+		cmd, ok := Config.Command[commandName]
 		if !ok {
 			fmt.Println("Unknown command")
 			continue
 		}
 
-		if err := cmd.Callback(); err != nil {
+		if err := cmd.Callback(param); err != nil {
 			fmt.Printf("%s", err.Error())
 		}
 

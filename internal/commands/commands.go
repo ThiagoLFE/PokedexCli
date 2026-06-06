@@ -12,16 +12,16 @@ import (
 
 type CliCommand struct {
 	Description string
-	Callback    func() error
+	Callback    func(string) error
 }
 
-func (c *Config) commandExit() error {
+func (c *Config) commandExit(_ string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func (c *Config) commandHelp() error {
+func (c *Config) commandHelp(_ string) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Printf("Usage:\n\n")
 	for key, cmd := range c.Command {
@@ -30,7 +30,7 @@ func (c *Config) commandHelp() error {
 	return nil
 }
 
-func (c *Config) commandMap() error {
+func (c *Config) commandMap(_ string) error {
 	// getting url
 	url := c.Client.BaseUrl + "/location-area"
 	if c.Next != nil {
@@ -70,7 +70,7 @@ func (c *Config) commandMap() error {
 	return nil
 }
 
-func (c *Config) commandBackMap() error {
+func (c *Config) commandBackMap(_ string) error {
 	// getting url
 	url := c.Client.BaseUrl + "/location-area"
 
@@ -111,6 +111,40 @@ func (c *Config) commandBackMap() error {
 	return nil
 }
 
+func (c *Config) commandExplore(city string) error {
+	fullpath := c.Client.BaseUrl + "/location-area/" + city
+
+	var err error
+	var area pokeapi.LocationArea
+
+	data, isCache := c.Cache.Get(fullpath)
+
+	// Reading data from cache/request
+	if isCache {
+		if err := json.Unmarshal(data, &area); err != nil {
+			return fmt.Errorf("Error to read the cached data: %w", err)
+		}
+	} else {
+		area, err = c.Client.GetLocationArea(fullpath)
+		if err != nil {
+			return err
+		}
+
+		//Storing the data to cache
+		data, err = json.Marshal(area)
+		if err != nil {
+			return fmt.Errorf("Error to store data into cache: %w", err)
+		}
+		c.Cache.Add(fullpath, data)
+	}
+
+	for _, pokemon := range area.PokemonEncounters {
+		fmt.Println(pokemon.Pokemon.Name)
+	}
+
+	return nil
+}
+
 func getCommands(c *Config) {
 	cmd := make(map[string]CliCommand, 0)
 
@@ -131,6 +165,10 @@ func getCommands(c *Config) {
 	cmd["bmap"] = CliCommand{
 		Description: "Returns to the last page of locations names",
 		Callback:    c.commandBackMap,
+	}
+	cmd["explore"] = CliCommand{
+		Description: "use 'explore <city-name>' for you search pokemons in the area",
+		Callback:    c.commandExplore,
 	}
 
 	c.Command = cmd
