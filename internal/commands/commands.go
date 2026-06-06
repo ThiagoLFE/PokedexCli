@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"time"
 
@@ -145,6 +146,46 @@ func (c *Config) commandExplore(city string) error {
 	return nil
 }
 
+func (c *Config) commandCatch(pokemonName string) error {
+	fullpath := c.Client.BaseUrl + "/pokemon/" + pokemonName
+
+	data, isCache := c.Cache.Get(fullpath)
+
+	var pokemon pokeapi.Pokemon
+	var err error
+
+	if isCache {
+		if err := json.Unmarshal(data, &pokemon); err != nil {
+			return err
+		}
+	} else {
+		pokemon, err = c.Client.GetPokemon(fullpath)
+		if err != nil {
+			return err
+		}
+
+		data, err = json.Marshal(pokemon)
+
+		if err != nil {
+			return err
+		}
+		c.Cache.Add(fullpath, data)
+	}
+
+	fmt.Printf("Throwing a Pokeball at %s...\n", pokemon.Name)
+	pokemonCapturing := 50 + (pokemon.BaseExperience / 10)
+	userCapturing := rand.Intn(100)
+
+	fmt.Printf("User: %d\nPokemon: %d\n", userCapturing, pokemonCapturing)
+	if userCapturing > pokemonCapturing {
+		fmt.Println("Gotcha!!!")
+		c.Pokedex[pokemon.Name] = pokemon
+	} else {
+		fmt.Println("The pokemon escape from the ball")
+	}
+
+	return nil
+}
 func getCommands(c *Config) {
 	cmd := make(map[string]CliCommand, 0)
 
@@ -170,6 +211,14 @@ func getCommands(c *Config) {
 		Description: "use 'explore <city-name>' for you search pokemons in the area",
 		Callback:    c.commandExplore,
 	}
+	cmd["catch"] = CliCommand{
+		Description: "Use 'catch <pokemon-name>' to try to capture the pokemon",
+		Callback:    c.commandCatch,
+	}
+	cmd["inspect"] = CliCommand{
+		Description: "Use to inspect the pokemon from your pokedex to see their attributes",
+		Callback:    c.commandInspect,
+	}
 
 	c.Command = cmd
 }
@@ -180,12 +229,14 @@ type Config struct {
 	Cache    *pokecache.PokeCache
 	Next     *string
 	Previous *string
+	Pokedex  map[string]pokeapi.Pokemon
 }
 
 func NewConfig() *Config {
 	cfg := &Config{
 		Next:     nil,
 		Previous: nil,
+		Pokedex:  map[string]pokeapi.Pokemon{},
 	}
 
 	getCommands(cfg)
